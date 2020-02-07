@@ -8,7 +8,7 @@ from scsgate.reactor import Reactor
 from scsgate.tasks import GetStatusTask
 import voluptuous as vol
 
-from homeassistant.const import CONF_DEVICE, CONF_NAME
+from homeassistant.const import CONF_DEVICE, CONF_NAME, CONF_PORT
 from homeassistant.core import EVENT_HOMEASSISTANT_STOP
 import homeassistant.helpers.config_validation as cv
 
@@ -23,21 +23,28 @@ DOMAIN = "scsgate"
 SCSGATE = None
 
 CONFIG_SCHEMA = vol.Schema(
-    {DOMAIN: vol.Schema({vol.Required(CONF_DEVICE): cv.string})}, extra=vol.ALLOW_EXTRA
+    {DOMAIN: vol.Schema({vol.Required(CONF_DEVICE): cv.string, vol.Optional(CONF_PORT): cv.port})}, extra=vol.ALLOW_EXTRA
 )
 
 SCSGATE_SCHEMA = vol.Schema(
-    {vol.Required(CONF_SCS_ID): cv.string, vol.Optional(CONF_NAME): cv.string}
+    {vol.Required(CONF_SCS_ID): cv.string, vol.Optional(CONF_NAME): cv.string, vol.Optional(CONF_PORT): cv.port}
 )
 
 
 def setup(hass, config):
     """Set up the SCSGate component."""
     device = config[DOMAIN][CONF_DEVICE]
+
+    if CONF_PORT in config.get(DOMAIN):
+        port = config.get(DOMAIN)[CONF_PORT]
+    else:
+        port = 0
+
+    """port = config.get(DOMAIN)[CONF_PORT].items()"""
     global SCSGATE
 
     try:
-        SCSGATE = SCSGate(device=device, logger=_LOGGER)
+        SCSGATE = SCSGate(device=device, logger=_LOGGER, port=port)
         SCSGATE.start()
     except Exception as exception:  # pylint: disable=broad-except
         _LOGGER.error("Cannot setup SCSGate component: %s", exception)
@@ -56,7 +63,7 @@ def setup(hass, config):
 class SCSGate:
     """The class for dealing with the SCSGate device via scsgate.Reactor."""
 
-    def __init__(self, device, logger):
+    def __init__(self, device, logger, port):
         """Initialize the SCSGate."""
         self._logger = logger
         self._devices = {}
@@ -65,7 +72,7 @@ class SCSGate:
         self._device_being_registered = None
         self._device_being_registered_lock = Lock()
 
-        connection = Connection(device=device, logger=self._logger)
+        connection = Connection(device=device, logger=self._logger, port=port)
 
         self._reactor = Reactor(
             connection=connection,
