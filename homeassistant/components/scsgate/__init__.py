@@ -83,11 +83,11 @@ class SCSGate:
     def handle_message(self, message):
         """Handle a messages seen on the bus."""
 
-        self._logger.debug(f"Received message {message}")
+        self._logger.debug("Received message {}".format(message))
         if not isinstance(message, StateMessage) and not isinstance(
             message, ScenarioTriggeredMessage
         ):
-            msg = f"Ignored message {message} - not relevant type"
+            msg = "Ignored message {} - not relevant type".format(message)
             self._logger.debug(msg)
             return
 
@@ -103,7 +103,7 @@ class SCSGate:
             try:
                 self._devices[message.entity].process_event(message)
             except Exception as exception:  # pylint: disable=broad-except
-                msg = f"Exception while processing event: {exception}"
+                msg = "Exception while processing event: {}".format(exception)
                 self._logger.error(msg)
         else:
             self._logger.info(
